@@ -72,7 +72,7 @@ public class controller : MonoBehaviour
         }
     }
     private AudioSource[] sources;
-    public bool right;
+    public bool right = true;
     [SerializeField] private Material[] scrollmats;
     [SerializeField] private ParticleSystem onepart;
     [SerializeField] private GameObject onepartject;
@@ -200,13 +200,29 @@ public class controller : MonoBehaviour
     private void Update()
     {
         List<RaycastHit2D> results = new List<RaycastHit2D>();
-        DrawBoxCastBox(last_pos, new Vector3(0.5f, 0.5f, 0.5f), Quaternion.identity, transform.position - last_pos, 1, Color.red);
-        int num_results = Physics2D.BoxCast(new Vector2(last_pos.x, last_pos.y), new Vector2(0.5f, 0.5f), 0, new Vector2(transform.position.x - last_pos.x, transform.position.y - last_pos.y), new ContactFilter2D(), results, 1);
+        DrawBoxCastBox(last_pos, new Vector3(0.25f, 0.25f, 0.25f), Quaternion.identity, transform.position - last_pos, 1, Color.red);
+        ContactFilter2D filt = new ContactFilter2D();
+        filt.useLayerMask = true;
+        filt.layerMask = LayerMask.GetMask("Default", "Ignore Raycast");
+        int num_results = Physics2D.BoxCast(new Vector2(last_pos.x, last_pos.y), new Vector2(0.25f, 0.25f), 0, new Vector2(transform.position.x - last_pos.x, transform.position.y - last_pos.y), filt, results, 1);
         List<Collider2D> cur_cols = results.Select(r => r.collider).ToList();
+        Debug.Log("colliding with " + cur_cols.Count + " and last colliding with " + las_results.Count);
+        
         for (int i = 0; i < results.Count; i++)
         {
-            if (!las_results.Contains(cur_cols[i]))
+            Debug.Log(cur_cols[i].gameObject);
+            bool conts = false;
+            for(int j = 0; j < las_results.Count; j++)
             {
+                if (las_results[j].gameObject == cur_cols[i].gameObject)
+                {
+                    conts = true;
+                    Debug.Log("conts");
+                }
+            }
+            if (!conts)
+            {
+                Debug.Log("colenter");
                 CollisionEnter(results[i]);
             }
             else
@@ -214,14 +230,24 @@ public class controller : MonoBehaviour
                 CollisionStay(results[i]);
             }
         }
-        for(int i = 0; i < las_results.Count; i++)
+        for (int i = 0; i < las_results.Count; i++)
         {
-            if (!cur_cols.Contains(las_results[i]))
+            bool cons = false;
+            for (int j = 0; j < cur_cols.Count; j++)
+            {
+                if (cur_cols[j].gameObject == las_results[i].gameObject)
+                {
+                    cons = true;
+                    Debug.Log("cons");
+                }
+            }
+            if (!cons)
             {
                 CollisionExit(las_results[i]);
+                Debug.Log("colexit");
             }
         }
-        las_results = cur_cols;
+        las_results = new List<Collider2D>(cur_cols);
         last_pos = transform.position;
         transform.position = new Vector3(Mathf.Clamp(transform.position.x, -1.75f, 1.75f), transform.position.y, 0);
         if(circletimer > 0)
@@ -247,24 +273,13 @@ public class controller : MonoBehaviour
         if (grounded)
         {
             sprend.flipX = right;
+            slashedtimer = 0;
         }
         else
         {
             sprend.flipX = !right;
         }
-        if (grounded)
-        {
-            slashedtimer = 0;
-            //sprend.sprite = sprdef;
-        }
-        else if (slashedtimer > 0)
-        {
-            //sprend.sprite = slashed;
-        }
-        else
-        {
-            //sprend.sprite = sprpre;
-        }
+
         if (slashedtimer > 0)
         {
             slashedtimer -= Time.deltaTime;
@@ -438,7 +453,7 @@ public class controller : MonoBehaviour
         {
             scroll = 0;
         }
-        if (!cur_respawning)
+        if (!cur_respawning && !grounded)
         {
             if (right)
             {
@@ -475,26 +490,6 @@ public class controller : MonoBehaviour
         {
             dashing = false;
             grounded = true;
-            if (transform.position.x < other.collider.gameObject.transform.position.x)
-            {
-                if (right)
-                {
-                    if (infi)
-                        transform.Translate(-Time.deltaTime * dashspeed * Mathf.Clamp(speedmultiplier, 0, 2f) * speedmultipliermultiplier, 0, 0);
-                    else
-                        transform.Translate(-Time.deltaTime * dashspeed * Mathf.Clamp(speedmultiplier, 0, 1) * speedmultipliermultiplier, 0, 0);
-                }
-            }
-            else
-            {
-                if (!right)
-                {
-                    if (infi)
-                        transform.Translate(Time.deltaTime * dashspeed * Mathf.Clamp(speedmultiplier, 0, 2f) * speedmultipliermultiplier, 0, 0);
-                    else
-                        transform.Translate(Time.deltaTime * dashspeed * Mathf.Clamp(speedmultiplier, 0, 1) * speedmultipliermultiplier, 0, 0);
-                }
-            }
         }
     }
     void CollisionEnter(RaycastHit2D other)
@@ -573,15 +568,15 @@ public class controller : MonoBehaviour
         else if (other.collider.gameObject.CompareTag("wall"))
         {
             grounded = true;
+            bool tx = transform.position.x < last_pos.x;
             transform.position = other.point;
-            Debug.Log(other.point);
-            if(transform.position.x < last_pos.x)
+            if(tx)
             {
-                transform.Translate(0.5f, 0, 0);
+                transform.Translate(0.25f, 0, 0);
             }
             else
             {
-                transform.Translate(-0.5f, 0, 0);
+                transform.Translate(-0.25f, 0, 0);
             }
         }
         else if (other.collider.gameObject.CompareTag("right"))
@@ -674,7 +669,11 @@ public class controller : MonoBehaviour
     {
         if (grounded)
         {
+            Debug.Log("cr");
             right = true;
+            grounded = false;
+            dashing = true;
+            transform.Translate(0.01f, 0, 0);
             return true;
         }
         else
@@ -793,7 +792,11 @@ public class controller : MonoBehaviour
     {
         if (grounded) 
         {
+            Debug.Log("cl");
             right = false;
+            grounded = false;
+            dashing = true;
+            transform.Translate(-0.01f, 0, 0);
             return true;
         }
         else

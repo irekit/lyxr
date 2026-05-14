@@ -10479,7 +10479,7 @@ GameObject:
   m_Component:
   - component: {fileID: 478536234}
   - component: {fileID: 478536235}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: splash
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10571,7 +10571,7 @@ GameObject:
   - component: {fileID: 511892657}
   - component: {fileID: 511892658}
   - component: {fileID: 511892659}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: spr
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10966,7 +10966,7 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 55
+    m_Bits: 63
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -19526,7 +19526,7 @@ GameObject:
   - component: {fileID: 1897817873}
   - component: {fileID: 1897817872}
   - component: {fileID: 1897817871}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Player
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -19542,7 +19542,7 @@ Transform:
   m_GameObject: {fileID: 1897817865}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.75, y: 3.2, z: 0}
+  m_LocalPosition: {x: -1.65, y: 3.2, z: 0}
   m_LocalScale: {x: 0.5, y: 0.5, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
