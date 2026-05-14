@@ -204,7 +204,7 @@ public class controller : MonoBehaviour
         ContactFilter2D filt = new ContactFilter2D();
         filt.useLayerMask = true;
         filt.layerMask = LayerMask.GetMask("Default", "Ignore Raycast");
-        int num_results = Physics2D.BoxCast(new Vector2(last_pos.x, last_pos.y), new Vector2(0.25f, 0.25f), 0, new Vector2(transform.position.x - last_pos.x, transform.position.y - last_pos.y), filt, results, 1);
+        int num_results = Physics2D.BoxCast(new Vector2(last_pos.x, last_pos.y), new Vector2(0.475f, 0.475f), 0, new Vector2(transform.position.x - last_pos.x, transform.position.y - last_pos.y), filt, results, 1);
         List<Collider2D> cur_cols = results.Select(r => r.collider).ToList();
         Debug.Log("colliding with " + cur_cols.Count + " and last colliding with " + las_results.Count);
         
@@ -249,7 +249,7 @@ public class controller : MonoBehaviour
         }
         las_results = new List<Collider2D>(cur_cols);
         last_pos = transform.position;
-        transform.position = new Vector3(Mathf.Clamp(transform.position.x, -1.75f, 1.75f), transform.position.y, 0);
+        transform.position = new Vector3(Mathf.Clamp(transform.position.x, -1.8f, 1.8f), transform.position.y, 0);
         if(circletimer > 0)
         {
             circletimer -= Time.deltaTime * 1.5f;
@@ -572,11 +572,11 @@ public class controller : MonoBehaviour
             transform.position = other.point;
             if(tx)
             {
-                transform.Translate(0.25f, 0, 0);
+                transform.Translate(0.24f, 0, 0);
             }
             else
             {
-                transform.Translate(-0.25f, 0, 0);
+                transform.Translate(-0.24f, 0, 0);
             }
         }
         else if (other.collider.gameObject.CompareTag("right"))
