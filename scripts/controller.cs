@@ -200,29 +200,28 @@ public class controller : MonoBehaviour
     private void Update()
     {
         List<RaycastHit2D> results = new List<RaycastHit2D>();
-        DrawBoxCastBox(last_pos, new Vector3(0.25f, 0.25f, 0.25f), Quaternion.identity, transform.position - last_pos, 1, Color.red);
+        Debug.Log("pos is " + transform.position);
+        Debug.Log("last seen at " + last_pos);
+        DrawBoxCastBox(last_pos, new Vector3(0.25f, 0.25f, 0.25f), Quaternion.identity, (transform.position - last_pos).normalized, (transform.position - last_pos).magnitude, Color.red);
         ContactFilter2D filt = new ContactFilter2D();
         filt.useLayerMask = true;
         filt.layerMask = LayerMask.GetMask("Default", "Ignore Raycast");
         int num_results = Physics2D.BoxCast(new Vector2(last_pos.x, last_pos.y), new Vector2(0.475f, 0.475f), 0, new Vector2(transform.position.x - last_pos.x, transform.position.y - last_pos.y), filt, results, 1);
         List<Collider2D> cur_cols = results.Select(r => r.collider).ToList();
-        Debug.Log("colliding with " + cur_cols.Count + " and last colliding with " + las_results.Count);
-        
+
+        last_pos = transform.position;
         for (int i = 0; i < results.Count; i++)
         {
-            Debug.Log(cur_cols[i].gameObject);
             bool conts = false;
-            for(int j = 0; j < las_results.Count; j++)
+            for (int j = 0; j < las_results.Count; j++)
             {
                 if (las_results[j].gameObject == cur_cols[i].gameObject)
                 {
                     conts = true;
-                    Debug.Log("conts");
                 }
             }
             if (!conts)
             {
-                Debug.Log("colenter");
                 CollisionEnter(results[i]);
             }
             else
@@ -238,19 +237,15 @@ public class controller : MonoBehaviour
                 if (cur_cols[j].gameObject == las_results[i].gameObject)
                 {
                     cons = true;
-                    Debug.Log("cons");
                 }
             }
             if (!cons)
             {
                 CollisionExit(las_results[i]);
-                Debug.Log("colexit");
             }
         }
         las_results = new List<Collider2D>(cur_cols);
-        last_pos = transform.position;
-        transform.position = new Vector3(Mathf.Clamp(transform.position.x, -1.8f, 1.8f), transform.position.y, 0);
-        if(circletimer > 0)
+        if (circletimer > 0)
         {
             circletimer -= Time.deltaTime * 1.5f;
             circlerenderer.color = new Color(circletimer, circletimer, circletimer, 1);
@@ -470,6 +465,7 @@ public class controller : MonoBehaviour
                     transform.Translate(-Time.deltaTime * dashspeed * Mathf.Clamp(speedmultiplier, 0, 1) * speedmultipliermultiplier, 0, 0);
             }
         }
+        
     }
     private bool prep_slashing = false;
     private float prep_slash_timer = 0;
@@ -488,8 +484,17 @@ public class controller : MonoBehaviour
     {
         if (other.collider.gameObject.CompareTag("wall"))
         {
-            dashing = false;
             grounded = true;
+            dashing = false;
+            transform.position = other.point;
+            if (other.normal.x > 0)
+            {
+                transform.Translate(0.24f, 0, 0);
+            }
+            else
+            {
+                transform.Translate(-0.24f, 0, 0);
+            }
         }
     }
     void CollisionEnter(RaycastHit2D other)
@@ -565,20 +570,6 @@ public class controller : MonoBehaviour
                 Respawn();
             }
         }
-        else if (other.collider.gameObject.CompareTag("wall"))
-        {
-            grounded = true;
-            bool tx = transform.position.x < last_pos.x;
-            transform.position = other.point;
-            if(tx)
-            {
-                transform.Translate(0.24f, 0, 0);
-            }
-            else
-            {
-                transform.Translate(-0.24f, 0, 0);
-            }
-        }
         else if (other.collider.gameObject.CompareTag("right"))
         {
             rights.Add(other.collider);
@@ -637,7 +628,7 @@ public class controller : MonoBehaviour
         yield return null;
         respawning = false;
         Time.timeScale = 1;
-        transform.position = new Vector3(-1.75f, 3.2f, 0);
+        transform.position = new Vector3(0, 3.2f, 0);
     }
     float initscroll;
     public float scroll = -1f;
@@ -669,11 +660,10 @@ public class controller : MonoBehaviour
     {
         if (grounded)
         {
-            Debug.Log("cr");
             right = true;
             grounded = false;
             dashing = true;
-            transform.Translate(0.01f, 0, 0);
+            transform.Translate(0.5f, 0, 0);
             return true;
         }
         else
@@ -704,7 +694,6 @@ public class controller : MonoBehaviour
     }
     IEnumerator SlashedEnemies(int i, Collider2D other, float las)
     {
-        Debug.Log("I slashed " + (i + 1) + " enemies!");
         transform.position = new Vector3(transform.position.x, other.gameObject.transform.position.y, 0);
         Vector2 newpos = new Vector2(las, other.gameObject.transform.position.y + 0.1f);
         //Debug.Log(i);
@@ -792,11 +781,10 @@ public class controller : MonoBehaviour
     {
         if (grounded) 
         {
-            Debug.Log("cl");
             right = false;
             grounded = false;
             dashing = true;
-            transform.Translate(-0.01f, 0, 0);
+            transform.Translate(-0.5f, 0, 0);
             return true;
         }
         else

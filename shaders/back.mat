@@ -43,7 +43,7 @@ Material:
     m_Floats:
     - _fact: 1
     - _height: 25
-    - _scroll: -4.1330824
+    - _scroll: -16.582056
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1
