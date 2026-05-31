@@ -31,9 +31,12 @@ public class controller : MonoBehaviour
     [SerializeField] private GameObject maincamera;
     public bool optimisation = false;
     private Vector3 last_pos;
+    private bool collisionenabled = true;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        //60fps
+        Application.targetFrameRate = 60;
         last_pos = transform.position;
         if(Screen.width > Screen.height)
         {
@@ -197,54 +200,88 @@ public class controller : MonoBehaviour
         DrawBox(topBox, color);
     }
     List<Collider2D> las_results;
+    float scmultiplier = 1;
     private void Update()
     {
-        List<RaycastHit2D> results = new List<RaycastHit2D>();
-        Debug.Log("pos is " + transform.position);
-        Debug.Log("last seen at " + last_pos);
-        DrawBoxCastBox(last_pos, new Vector3(0.25f, 0.25f, 0.25f), Quaternion.identity, (transform.position - last_pos).normalized, (transform.position - last_pos).magnitude, Color.red);
-        ContactFilter2D filt = new ContactFilter2D();
-        filt.useLayerMask = true;
-        filt.layerMask = LayerMask.GetMask("Default", "Ignore Raycast");
-        int num_results = Physics2D.BoxCast(new Vector2(last_pos.x, last_pos.y), new Vector2(0.475f, 0.475f), 0, new Vector2(transform.position.x - last_pos.x, transform.position.y - last_pos.y), filt, results, 1);
-        List<Collider2D> cur_cols = results.Select(r => r.collider).ToList();
-
-        last_pos = transform.position;
-        for (int i = 0; i < results.Count; i++)
+        //scroll multiplier
+        if(scmultiplier < 1)
         {
-            bool conts = false;
-            for (int j = 0; j < las_results.Count; j++)
+            scmultiplier += Time.deltaTime * 2;
+        }
+        else
+        {
+            scmultiplier = 1;
+        }
+        if (grounded)
+        {
+            scmultiplier = 1;
+        }
+        //collision detection
+        if (collisionenabled)
+        {
+            List<RaycastHit2D> results = new List<RaycastHit2D>();
+            ContactFilter2D filt = new ContactFilter2D();
+            filt.useLayerMask = true;
+            filt.layerMask = LayerMask.GetMask("Default", "Ignore Raycast");
+            Vector2 disp = transform.position - last_pos;
+            float magn = disp.magnitude;
+            Vector2 norm = Vector2.zero;
+            if (magn > 0)
             {
-                if (las_results[j].gameObject == cur_cols[i].gameObject)
-                {
-                    conts = true;
-                }
-            }
-            if (!conts)
-            {
-                CollisionEnter(results[i]);
+                norm = disp.normalized;
             }
             else
             {
-                CollisionStay(results[i]);
+
             }
-        }
-        for (int i = 0; i < las_results.Count; i++)
-        {
-            bool cons = false;
-            for (int j = 0; j < cur_cols.Count; j++)
+            if (grounded)
             {
-                if (cur_cols[j].gameObject == las_results[i].gameObject)
+                last_pos = transform.position;
+                //last_pos.x += right ? 0.001f : -0.001f;
+                //norm = right ? Vector2.right : Vector2.left;
+                //magn = 0.001f;
+            }
+            DrawBoxCastBox(last_pos, new Vector3(0.24f, 0.24f, 0.24f), Quaternion.identity, norm, magn, Color.red);
+            int num_results = Physics2D.BoxCast(new Vector2(last_pos.x, last_pos.y), new Vector2(0.48f, 0.48f), 0, norm, filt, results, magn);
+            List<Collider2D> cur_cols = results.Select(r => r.collider).ToList();
+
+            last_pos = transform.position;
+            for (int i = 0; i < results.Count; i++)
+            {
+                bool conts = false;
+                for (int j = 0; j < las_results.Count; j++)
                 {
-                    cons = true;
+                    if (las_results[j].gameObject == cur_cols[i].gameObject)
+                    {
+                        conts = true;
+                    }
+                }
+                if (!conts)
+                {
+                    CollisionEnter(results[i]);
+                }
+                else
+                {
+                    CollisionStay(results[i]);
                 }
             }
-            if (!cons)
+            for (int i = 0; i < las_results.Count; i++)
             {
-                CollisionExit(las_results[i]);
+                bool cons = false;
+                for (int j = 0; j < cur_cols.Count; j++)
+                {
+                    if (cur_cols[j].gameObject == las_results[i].gameObject)
+                    {
+                        cons = true;
+                    }
+                }
+                if (!cons)
+                {
+                    CollisionExit(las_results[i]);
+                }
             }
+            las_results = new List<Collider2D>(cur_cols);
         }
-        las_results = new List<Collider2D>(cur_cols);
         if (circletimer > 0)
         {
             circletimer -= Time.deltaTime * 1.5f;
@@ -320,10 +357,10 @@ public class controller : MonoBehaviour
         {
             if (infi)
             {
-                scroll = intendedscroll * Mathf.Clamp(speedmultiplier, 0, 2f) * speedmultipliermultiplier;
+                scroll = intendedscroll * scmultiplier * Mathf.Clamp(speedmultiplier, 0, 2f) * speedmultipliermultiplier;
             }
             else
-                scroll = intendedscroll * Mathf.Clamp(speedmultiplier, 0, 1) * speedmultipliermultiplier;
+                scroll = intendedscroll * scmultiplier * Mathf.Clamp(speedmultiplier, 0, 1) * speedmultipliermultiplier;
         }
         else scroll = 0;
         animator.SetFloat("speed", Mathf.Clamp(speedmultiplier, 0, 1));
@@ -486,15 +523,7 @@ public class controller : MonoBehaviour
         {
             grounded = true;
             dashing = false;
-            transform.position = other.point;
-            if (other.normal.x > 0)
-            {
-                transform.Translate(0.24f, 0, 0);
-            }
-            else
-            {
-                transform.Translate(-0.24f, 0, 0);
-            }
+            transform.position = other.centroid;
         }
     }
     void CollisionEnter(RaycastHit2D other)
@@ -534,12 +563,18 @@ public class controller : MonoBehaviour
             }
 
         }
+        else if (other.collider.gameObject.CompareTag("wall"))
+        {
+            grounded = true;
+            dashing = false;
+            transform.position = other.centroid;
+        }
         else if (other.collider.gameObject.CompareTag("enemy"))
         {
             if (Mathf.Abs(other.normal.x) == 1)
             {
                 float las = other.transform.position.x;
-                for(int i = 0; i < 10; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     Vector2 poscheck;
                     if (right)
@@ -548,9 +583,9 @@ public class controller : MonoBehaviour
                     }
                     else
                     {
-                         poscheck = new Vector2(other.transform.position.x - (i + 1) * 0.5f, other.transform.position.y);
+                        poscheck = new Vector2(other.transform.position.x - (i + 1) * 0.5f, other.transform.position.y);
                     }
-                        Collider2D newcol = Physics2D.OverlapPoint(poscheck);
+                    Collider2D newcol = Physics2D.OverlapPoint(poscheck);
                     if (newcol && newcol.gameObject.tag == "enemy")
                     {
                         las = newcol.gameObject.transform.position.x;
@@ -562,7 +597,7 @@ public class controller : MonoBehaviour
                         break;
                     }
                 }
-         
+
                 other.collider.gameObject.GetComponent<enemyscript>().Respawn();
             }
             else
@@ -589,6 +624,7 @@ public class controller : MonoBehaviour
     {
         if (!cur_respawning)
         {
+            collisionenabled = false;
             splash_ject.SetActive(true);
             splash_ject.transform.localScale = new Vector3(speedmultiplier * 4, speedmultiplier * 4, 0);
             if (right)
@@ -629,6 +665,9 @@ public class controller : MonoBehaviour
         respawning = false;
         Time.timeScale = 1;
         transform.position = new Vector3(0, 3.2f, 0);
+        right = false;
+        last_pos = transform.position;
+        collisionenabled = true;
     }
     float initscroll;
     public float scroll = -1f;
@@ -663,7 +702,8 @@ public class controller : MonoBehaviour
             right = true;
             grounded = false;
             dashing = true;
-            transform.Translate(0.5f, 0, 0);
+            transform.Translate(0.1f, 0, 0);
+            last_pos = transform.position;
             return true;
         }
         else
@@ -682,7 +722,7 @@ public class controller : MonoBehaviour
                 transform.position = closject.transform.position;
                 closject.GetComponent<leftright>().Lr(true);
                 right = true;
-
+                scmultiplier = 0;
                 return true;
             }
             else
@@ -695,11 +735,8 @@ public class controller : MonoBehaviour
     IEnumerator SlashedEnemies(int i, Collider2D other, float las)
     {
         transform.position = new Vector3(transform.position.x, other.gameObject.transform.position.y, 0);
-        Vector2 newpos = new Vector2(las, other.gameObject.transform.position.y + 0.1f);
-        //Debug.Log(i);
-        //Debug.Log(newpos);
+        Vector2 newpos = new Vector2(las, other.gameObject.transform.position.y);
         Vector2 sub = newpos - new Vector2(transform.position.x, transform.position.y);
-
         slashedtimer = 0.5f;
         speedmultiplier += i * 0.2f;
         if(infi)
@@ -743,7 +780,7 @@ public class controller : MonoBehaviour
             yield return new WaitForSecondsRealtime(0.1f);
             while (transform.position.x < newpos.x - 2f || transform.position.x > newpos.x + 2f)
             {
-                transform.position = new Vector3(transform.position.x + 2 * (right ? 1 : -1), transform.position.y + 0.01f, 0);
+                transform.position = new Vector3(transform.position.x + 2 * (right ? 1 : -1), transform.position.y, 0);
                 yield return null;
             }
             Time.timeScale = 1;
@@ -773,7 +810,8 @@ public class controller : MonoBehaviour
             Time.timeScale = 1;
         }
 
-        transform.position = newpos;
+        transform.position = new Vector2(las, other.gameObject.transform.position.y);
+        scmultiplier = 0;
         justkilledenemy = 2;
         prep_slashing = false;
     }
@@ -784,7 +822,8 @@ public class controller : MonoBehaviour
             right = false;
             grounded = false;
             dashing = true;
-            transform.Translate(-0.5f, 0, 0);
+            transform.Translate(-0.1f, 0, 0);
+            last_pos = transform.position;
             return true;
         }
         else
@@ -803,6 +842,7 @@ public class controller : MonoBehaviour
                 transform.position = closject.transform.position;
                 closject.GetComponent<leftright>().Lr(false);
                 right = false;
+                scmultiplier = 0;
                 return true;
             }
             else

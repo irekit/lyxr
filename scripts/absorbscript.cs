@@ -69,7 +69,7 @@ public class absorbscript : MonoBehaviour
             if(sjc.transform.localScale.x > ogscale.x * 1.7f)
             {
                 sjc.transform.localScale = ogscale + new Vector3(UnityEngine.Random.value * 0.5f - 0.25f, UnityEngine.Random.value * 0.5f - 0.25f, 0);
-                if(transform.position.y < 8) Split();
+                if(transform.position.y < 8 && transform.position.y > -10) Split();
             }
         }
         else
@@ -87,7 +87,8 @@ public class absorbscript : MonoBehaviour
             if (sjc.transform.localScale.x > ogscale.x * 1.7f)
             {
                 sjc.transform.localScale = ogscale + new Vector3(UnityEngine.Random.value * 0.5f - 0.25f, UnityEngine.Random.value * 0.5f - 0.25f, 0);
-                if (transform.position.y < 8) Split();
+                if (transform.position.y < 8 && transform.position.y > -10) Split();
+                //Split();
             }
         }
     }
